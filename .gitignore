@@ -1,0 +1,66 @@
+# ---- Secrets / local config ----
+.env
+.env.*
+!.env.example
+
+# ---- Local-only working notes (kept on disk, not published) ----
+CLAUDE.md
+docs/research_brief.md
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---- Plugin binaries (NEVER commit licensed/commercial plugins) ----
+*.vst3
+*.vst
+*.component
+*.dll
+*.aaxplugin
+plugins/
+
+# ---- Audio data (DI / targets / renders / profiles) ----
+# Keep the data/ directory skeleton + .gitkeep, ignore all actual contents.
+data/**
+!data/**/
+!data/**/.gitkeep
+
+# Loose audio anywhere
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3
+*.ogg
+*.m4a
+
+# ---- Model checkpoints / weights / large artifacts ----
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.npz
+*.npy
+
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

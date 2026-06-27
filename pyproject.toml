@@ -1,0 +1,50 @@
+[project]
+name = "tonematcher"
+version = "0.0.1"
+description = "Match a target guitar tone using your own local plugin library via headless rendering + gradient-free search."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+authors = [{ name = "adhuv" }]
+
+# Pinned to the exact versions resolved & verified on this machine (Python 3.11,
+# Windows x86_64). torch/torchaudio must stay compatible as a pair. Fully resolved
+# transitive pins (with hashes) live in `uv.lock` (committed) -- `uv sync` recreates
+# the environment exactly from there.
+dependencies = [
+    "torch==2.12.1",
+    "torchaudio==2.11.0",
+    "pedalboard==0.9.23",
+    "auraloss==0.4.0",
+    "dasp-pytorch==0.0.1",
+    "numpy==2.2.6",
+    "scipy==1.17.1",
+    "librosa==0.11.0",
+    "soundfile==0.14.0",
+    "cma==4.4.4",
+    "nevergrad==1.0.12",
+    "pyyaml==6.0.3",
+    "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+]
+
+[project.scripts]
+tonematcher = "tonematcher.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tonematcher"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.uv]
+# Keep the project itself installed in editable/dev mode during `uv sync`.
+package = true

@@ -1,0 +1,16 @@
+# Normalize line endings: store LF in the repo, check out LF everywhere.
+* text=auto eol=lf
+
+# Treat audio/binaries as binary (defensive; these are gitignored anyway).
+*.wav binary
+*.flac binary
+*.aif binary
+*.aiff binary
+*.mp3 binary
+*.ckpt binary
+*.pt binary
+*.pth binary
+*.onnx binary
+*.safetensors binary
+*.npz binary
+*.npy binary
