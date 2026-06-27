@@ -8,3 +8,9 @@
 
 All audio lives under ``data/`` and is gitignored - only the directory skeleton is tracked.
 """
+
+from __future__ import annotations
+
+from .signals import load_di, synthetic_di
+
+__all__ = ["synthetic_di", "load_di"]

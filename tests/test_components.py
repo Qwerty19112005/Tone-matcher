@@ -1,0 +1,33 @@
+"""Unit tests for the metric, optimizer, and signal helpers (no plugins required)."""
+
+from __future__ import annotations
+
+import numpy as np
+
+
+def test_synthetic_di_shape():
+    from tonematcher.data import synthetic_di
+
+    di = synthetic_di(sample_rate=16000, seconds=0.5)
+    assert di.shape == (1, 8000)
+    assert di.dtype == np.float32
+    assert np.isfinite(di).all()
+
+
+def test_mrstft_zero_on_identical():
+    from tonematcher.metrics import MRSTFTMetric
+
+    t = np.arange(8000) / 16000.0
+    a = (0.3 * np.sin(2 * np.pi * 220 * t)).astype(np.float32)[None, :]
+    metric = MRSTFTMetric()
+    assert metric.distance(a, a) == 0.0
+    assert metric.distance(a, a * 0.25) > 0.0  # quieter signal differs
+
+
+def test_minimize_recovers_quadratic():
+    from tonematcher.optimize import minimize
+
+    target = np.array([0.6, 0.3])
+    res = minimize(lambda x: float(np.sum((x - target) ** 2)), dim=2, budget=80, seed=1)
+    assert res.n_evals > 0
+    assert np.linalg.norm(res.x - target) < 0.15

@@ -10,3 +10,9 @@ as an arbitrary, non-differentiable black box, so we use gradient-free optimizer
 This mirrors ST-ITO's optimizer role. The render is exact, so this stage DISPOSES of the
 candidates the static stage nominated.
 """
+
+from __future__ import annotations
+
+from .gradient_free import OptResult, minimize
+
+__all__ = ["minimize", "OptResult"]

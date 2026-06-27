@@ -11,3 +11,9 @@ breaks nomination and optimization alike.
 Caveat (ST-ITO, ISMIR 2024): published encoders do NOT yet work well for guitar tone -
 expect to adapt/retrain. Treat any learned metric as a NOMINATOR, not ground truth.
 """
+
+from __future__ import annotations
+
+from .mrstft import MRSTFTMetric
+
+__all__ = ["MRSTFTMetric"]

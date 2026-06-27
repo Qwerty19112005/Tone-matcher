@@ -11,3 +11,9 @@ API note: Pedalboard's plugin-parameter surface has shifted across versions. Ver
 installed version's parameter access (``plugin.parameters`` mapping vs attribute access)
 before relying on it - do not assume. See ``scripts/phase0_host_check.py``.
 """
+
+from __future__ import annotations
+
+from .loader import ParamSpec, PluginHost, PluginLoadError, load_plugin
+
+__all__ = ["PluginHost", "load_plugin", "PluginLoadError", "ParamSpec"]
