@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.set_defaults(func=None)
 
     sub = parser.add_subparsers(dest="command", metavar="<command>")
-    # Placeholder subcommands — implemented in later phases.
+    # Placeholder subcommands - implemented in later phases.
     sub.add_parser("profile", help="(Phase 4) sample + render + embed a plugin's tone region")
     sub.add_parser("nominate", help="(Phase 4) propose candidate plugins/chains for a target")
     sub.add_parser("match", help="(Phase 1+) optimize knob settings to match a target")

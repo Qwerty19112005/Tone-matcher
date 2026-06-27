@@ -1,4 +1,4 @@
-"""Smoke tests — confirm the package imports and the CLI parser builds.
+"""Smoke tests - confirm the package imports and the CLI parser builds.
 
 These do NOT touch audio, plugins, or torch-heavy paths; they just verify the project is
 wired together so CI/local `pytest` passes from a clean install.

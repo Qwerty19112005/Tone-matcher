@@ -1,4 +1,4 @@
-"""Phase 1 — self-recovery of a single knob (STUB, not yet implemented).
+"""Phase 1 - self-recovery of a single knob (STUB, not yet implemented).
 
 Goal (do NOT build until Phase 0 passes):
   1. Pick one plugin and one continuous knob.

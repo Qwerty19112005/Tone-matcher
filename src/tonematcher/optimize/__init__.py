@@ -1,4 +1,4 @@
-"""optimize — gradient-free knob search (the dynamic stage).
+"""optimize - gradient-free knob search (the dynamic stage).
 
 Given a hosted plugin/chain, a target, and a metric, search the (normalized) parameter
 vector that minimizes ``metric.distance(render(params), target)``. The plugin is treated

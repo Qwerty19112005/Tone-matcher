@@ -1,4 +1,4 @@
-"""hosting — Pedalboard wrappers for headless plugin hosting.
+"""hosting - Pedalboard wrappers for headless plugin hosting.
 
 Responsibilities (the engine under the *dynamic* stage):
 
@@ -9,5 +9,5 @@ Responsibilities (the engine under the *dynamic* stage):
 
 API note: Pedalboard's plugin-parameter surface has shifted across versions. Verify the
 installed version's parameter access (``plugin.parameters`` mapping vs attribute access)
-before relying on it — do not assume. See ``scripts/phase0_host_check.py``.
+before relying on it - do not assume. See ``scripts/phase0_host_check.py``.
 """

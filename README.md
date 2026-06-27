@@ -10,26 +10,26 @@ design leans on being able to afford slow, exhaustive, render-in-the-loop search
 
 ## Two-stage architecture
 
-1. **Static stage — *nominate* (cheap):** prune the whole plugin library down to a few
+1. **Static stage - *nominate* (cheap):** prune the whole plugin library down to a few
    candidate plugins/chains whose capability could plausibly reach the target. This is an
-   embedding/metadata query — **no audio is rendered at query time.** Approximate is fine;
+   embedding/metadata query - **no audio is rendered at query time.** Approximate is fine;
    it only prunes.
-2. **Dynamic stage — *render + optimize* (expensive, exact):** take the few nominated
+2. **Dynamic stage - *render + optimize* (expensive, exact):** take the few nominated
    chains, **host and render the real plugins** (turn their knobs), and optimize the knob
    settings with a gradient-free optimizer to minimize a learned audio-similarity distance
    to the target. Reality handles nonlinearity and composition exactly because we actually
    run the plugins.
 
 > **Guiding principle:** surrogates/embeddings only need to **nominate**; the real render
-> **disposes**. The metric never has to predict a chain accurately — only propose
+> **disposes**. The metric never has to predict a chain accurately - only propose
 > promising candidates that the real render then validates.
 
 It builds on prior work in audio-production style transfer and effect-parameter
-estimation — notably ST-ITO, Open-Amp, DeepAFx-ST, and blind audio-graph estimation.
+estimation - notably ST-ITO, Open-Amp, DeepAFx-ST, and blind audio-graph estimation.
 
 ## Status
 
-**Phase 0 — headless plugin hosting sanity check.** Everything else is gated on confirming
+**Phase 0 - headless plugin hosting sanity check.** Everything else is gated on confirming
 your plugins load and render *without their GUI* via [Pedalboard](https://github.com/spotify/pedalboard).
 
 ## Setup
@@ -45,7 +45,7 @@ uv sync --extra dev
 cp .env.example .env
 #   then edit .env: set PLUGIN_DIR and (optionally) a specific PLUGIN_PATH + DI_PATH
 
-# 3. Gating test — load ONE plugin, list its params, render a DI clip through it
+# 3. Gating test - load ONE plugin, list its params, render a DI clip through it
 uv run python scripts/phase0_host_check.py
 ```
 
@@ -56,7 +56,7 @@ the rest of the project is unblocked.
 
 Kept out of git (see `.gitignore`): plugin binaries, all audio (DI / targets / renders /
 profiles), model checkpoints, your `.env`, and the virtualenv. **Commercial plugins are
-never downloaded, cracked, or sourced by this project** — you install and license them
+never downloaded, cracked, or sourced by this project** - you install and license them
 yourself, and only point the code at their paths via `.env`.
 
 ## Layout
@@ -76,4 +76,4 @@ configs/      YAML run configs
 
 ## License
 
-No license yet — to be decided.
+No license yet - to be decided.

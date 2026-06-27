@@ -6,6 +6,7 @@
 # ---- Local-only working notes (kept on disk, not published) ----
 CLAUDE.md
 docs/research_brief.md
+*.local.md
 
 # ---- Virtual environments ----
 .venv/
