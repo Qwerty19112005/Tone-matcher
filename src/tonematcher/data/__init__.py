@@ -11,6 +11,30 @@ All audio lives under ``data/`` and is gitignored - only the directory skeleton 
 
 from __future__ import annotations
 
+from .guitar import (
+    REGIMES,
+    chords,
+    chromatic,
+    dynamic_phrase,
+    karplus_strong,
+    palm_mutes,
+    power_chords,
+    richer_di,
+    single_notes,
+)
 from .signals import load_di, synthetic_di, trim_seconds
 
-__all__ = ["synthetic_di", "load_di", "trim_seconds"]
+__all__ = [
+    "synthetic_di",
+    "load_di",
+    "trim_seconds",
+    "richer_di",
+    "single_notes",
+    "power_chords",
+    "chords",
+    "palm_mutes",
+    "dynamic_phrase",
+    "chromatic",
+    "karplus_strong",
+    "REGIMES",
+]

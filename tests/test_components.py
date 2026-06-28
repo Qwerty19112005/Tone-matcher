@@ -24,6 +24,16 @@ def test_mrstft_zero_on_identical():
     assert metric.distance(a, a * 0.25) > 0.0  # quieter signal differs
 
 
+def test_richer_di_regimes():
+    from tonematcher.data import REGIMES
+
+    for name, fn in REGIMES.items():
+        di = fn(sr=48000)
+        assert di.ndim == 2 and di.shape[0] == 1, name
+        assert di.shape[1] > 0 and np.isfinite(di).all(), name
+        assert 0.0 < float(np.max(np.abs(di))) <= 1.0, name
+
+
 def test_minimize_recovers_quadratic():
     from tonematcher.optimize import minimize
 
