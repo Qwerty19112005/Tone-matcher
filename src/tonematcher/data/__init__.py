@@ -11,6 +11,6 @@ All audio lives under ``data/`` and is gitignored - only the directory skeleton 
 
 from __future__ import annotations
 
-from .signals import load_di, synthetic_di
+from .signals import load_di, synthetic_di, trim_seconds
 
-__all__ = ["synthetic_di", "load_di"]
+__all__ = ["synthetic_di", "load_di", "trim_seconds"]

@@ -10,17 +10,33 @@ import numpy as np
 
 
 def synthetic_di(sample_rate: int = 48000, seconds: float = 1.5, seed: int = 0) -> np.ndarray:
-    """A short, deterministic DI-like signal: decaying harmonics plus light noise.
+    """A deterministic, SUSTAINED DI-like signal: a plucked note that rings on.
 
-    Returns mono audio shaped (1, samples). Useful as a stand-in DI when no real
-    recording is available.
+    Fast attack and slow decay so the note sustains. The sustained (steady-state) portion
+    is what an amp's tone stack / EQ acts on, so a sustained probe lets the optimizer
+    resolve EQ knobs far better than a fast-decaying transient would. Returns mono audio
+    shaped (1, samples).
     """
     n = int(seconds * sample_rate)
     t = np.arange(n) / sample_rate
-    env = np.exp(-3.0 * t).astype(np.float32)
-    tone = sum(a * np.sin(2 * np.pi * f * t) for f, a in [(110, 0.6), (220, 0.3), (330, 0.15)])
-    noise = 0.01 * np.random.default_rng(seed).standard_normal(n)
-    return (env * (tone + noise)).astype(np.float32)[np.newaxis, :]
+    env = (1.0 - np.exp(-t / 0.01)) * (0.4 + 0.6 * np.exp(-t / 2.0))  # ~10ms attack, slow decay
+    f0 = 110.0  # A2, a typical low guitar note
+    harmonics = sum((1.0 / k) * np.sin(2 * np.pi * f0 * k * t) for k in range(1, 8))
+    harmonics = harmonics / np.max(np.abs(harmonics))
+    noise = 0.005 * np.random.default_rng(seed).standard_normal(n)
+    return (0.5 * env * (harmonics + noise)).astype(np.float32)[np.newaxis, :]
+
+
+def trim_seconds(audio: np.ndarray, sample_rate: int, seconds: float) -> np.ndarray:
+    """Drop the first ``seconds`` from the time axis.
+
+    Used to discard a plugin's startup transient before scoring: some neural amps are not
+    bit-reproducible for the first ~100 ms, which would otherwise put a noise floor under
+    the similarity metric.
+    """
+    n = int(max(0.0, seconds) * sample_rate)
+    a = np.asarray(audio)
+    return a[:, n:] if a.ndim == 2 else a[n:]
 
 
 def load_di(path: str, sample_rate: int | None = None) -> tuple[np.ndarray, int]:

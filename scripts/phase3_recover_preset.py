@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from tonematcher.data import load_di, synthetic_di  # noqa: E402
+from tonematcher.data import load_di, synthetic_di, trim_seconds  # noqa: E402
 from tonematcher.hosting import PluginHost  # noqa: E402
 from tonematcher.metrics import MRSTFTMetric  # noqa: E402
 from tonematcher.optimize import minimize  # noqa: E402
@@ -48,15 +48,15 @@ def resolve_plugin() -> str:
     sys.exit("No plugin found. Set PLUGIN_PATH in .env or pass --plugin.")
 
 
-def rank_knobs_by_sensitivity(host: PluginHost, di, sr, metric):
+def rank_knobs_by_sensitivity(host: PluginHost, di, sr, metric, warmup):
     """Return [(sensitivity, knob)] sorted desc, for tone knobs only."""
     knobs = [k for k in host.continuous_params()
              if not any(h in k.lower() for h in SKIP_HINTS)]
     original = {k: host.get_raw(k) for k in knobs}
     scored = []
     for k in knobs:
-        host.set_raw(k, 0.25); host.reset(); lo = host.render(di, sr)
-        host.set_raw(k, 0.75); host.reset(); hi = host.render(di, sr)
+        host.set_raw(k, 0.25); host.reset(); lo = trim_seconds(host.render(di, sr), sr, warmup)
+        host.set_raw(k, 0.75); host.reset(); hi = trim_seconds(host.render(di, sr), sr, warmup)
         scored.append((metric.distance(lo, hi), k))
         host.set_raw(k, original[k])
     for k, v in original.items():
@@ -73,6 +73,8 @@ def main() -> int:
                         help="skip knobs whose MRSTFT change is below this")
     parser.add_argument("--budget", type=int, default=None, help="evals; default scales with dim")
     parser.add_argument("--backend", default="cma", choices=["cma", "nevergrad"])
+    parser.add_argument("--warmup", type=float, default=0.15,
+                        help="seconds of startup transient to trim before scoring")
     parser.add_argument("--seconds", type=float, default=1.0)
     parser.add_argument("--di", default=None)
     parser.add_argument("--sr", type=int, default=48000)
@@ -100,7 +102,7 @@ def main() -> int:
     metric = MRSTFTMetric()
 
     print("\nScreening knobs by tonal sensitivity ...")
-    ranked = rank_knobs_by_sensitivity(host, di, sr, metric)
+    ranked = rank_knobs_by_sensitivity(host, di, sr, metric, args.warmup)
     selected = [(s, k) for s, k in ranked if s >= args.min_sensitivity][: args.max_knobs]
     if not selected:
         sys.exit("No sufficiently sensitive knobs found; lower --min-sensitivity.")
@@ -119,14 +121,13 @@ def main() -> int:
     true_raw = rng.uniform(0.1, 0.9, size=dim)
     host.set_raw_vector(knobs, true_raw)
     host.reset()
-    target = host.render(di, sr)
-    true_values = [host.get_value(k) for k in knobs]
+    target = trim_seconds(host.render(di, sr), sr, args.warmup)
 
     # Objective: optimizer sees only the target audio.
     def objective(x: np.ndarray) -> float:
         host.set_raw_vector(knobs, x)
         host.reset()
-        return metric.distance(host.render(di, sr), target)
+        return metric.distance(trim_seconds(host.render(di, sr), sr, args.warmup), target)
 
     budget = args.budget or max(500, 100 * dim)
     print(f"\nOptimizing {dim} knobs jointly ({args.backend}, budget {budget}) ...")
@@ -136,7 +137,6 @@ def main() -> int:
 
     rec_raw = np.asarray(result.x, dtype=np.float64)
     host.set_raw_vector(knobs, rec_raw)
-    rec_values = [host.get_value(k) for k in knobs]
     abs_err = np.abs(rec_raw - true_raw)
 
     print("\nPer-knob recovery:")
