@@ -48,3 +48,14 @@ addopts = "-q"
 [tool.uv]
 # Keep the project itself installed in editable/dev mode during `uv sync`.
 package = true
+
+# CUDA builds of torch/torchaudio (RTX 3060, driver supports CUDA 13.x).
+# PyPI ships CPU-only wheels on Windows; cu130 carries torch 2.12.1 + torchaudio 2.11.0.
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+torchaudio = { index = "pytorch-cu130" }
