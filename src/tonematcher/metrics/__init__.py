@@ -14,6 +14,7 @@ expect to adapt/retrain. Treat any learned metric as a NOMINATOR, not ground tru
 
 from __future__ import annotations
 
+from .fingerprint import ToneFingerprintMetric
 from .mrstft import MRSTFTMetric
 
-__all__ = ["MRSTFTMetric"]
+__all__ = ["MRSTFTMetric", "ToneFingerprintMetric"]

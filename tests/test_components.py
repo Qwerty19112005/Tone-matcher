@@ -24,6 +24,20 @@ def test_mrstft_zero_on_identical():
     assert metric.distance(a, a * 0.25) > 0.0  # quieter signal differs
 
 
+def test_fingerprint_level_invariance():
+    from tonematcher.metrics import ToneFingerprintMetric
+
+    t = np.arange(48000) / 48000.0
+    a = (0.4 * np.sin(2 * np.pi * 110 * t) + 0.1 * np.sin(2 * np.pi * 330 * t)).astype(
+        np.float32
+    )[None, :]
+    m = ToneFingerprintMetric()
+    assert m.distance(a, a) == 0.0
+    assert m.distance(a, 0.25 * a) < 1e-6  # loudness must not read as a tone change
+    distorted = np.tanh(6.0 * a).astype(np.float32)  # saturation must read as a tone change
+    assert m.distance(a, distorted) > 0.05
+
+
 def test_richer_di_regimes():
     from tonematcher.data import REGIMES
 
