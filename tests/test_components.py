@@ -38,6 +38,33 @@ def test_fingerprint_level_invariance():
     assert m.distance(a, distorted) > 0.05
 
 
+def test_openamp_metric_if_vendored():
+    import pytest
+
+    from pathlib import Path
+
+    ckpt = (
+        Path(__file__).resolve().parents[1]
+        / "vendor/OpenAmp/Checkpoints/FxEncoder-splendidbreeze23-ep45.pt"
+    )
+    if not ckpt.is_file():
+        pytest.skip("Open-Amp not vendored (vendor/ is local-only)")
+
+    from tonematcher.metrics import OpenAmpToneMetric
+
+    t = np.arange(48000) / 48000.0
+    a = (0.4 * np.sin(2 * np.pi * 110 * t) + 0.1 * np.sin(2 * np.pi * 330 * t)).astype(
+        np.float32
+    )[None, :]
+    m = OpenAmpToneMetric()
+    e = m.embed(a)
+    assert e.shape == (64,)
+    assert abs(float(np.linalg.norm(e)) - 1.0) < 1e-5
+    assert m.distance(a, a) < 1e-6
+    assert m.distance(a, 0.25 * a) < 1e-4  # loudness must not read as tone
+    assert m.distance(a, np.tanh(8.0 * a).astype(np.float32)) > 0.005  # saturation must
+
+
 def test_richer_di_regimes():
     from tonematcher.data import REGIMES
 

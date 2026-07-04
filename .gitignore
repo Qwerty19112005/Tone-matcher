@@ -8,6 +8,9 @@ CLAUDE.md
 docs/research_brief.md
 *.local.md
 
+# ---- Vendored third-party reference repos (external code, cloned locally) ----
+vendor/
+
 # ---- Virtual environments ----
 .venv/
 venv/
