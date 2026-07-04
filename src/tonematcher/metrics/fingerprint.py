@@ -81,6 +81,9 @@ class ToneFingerprintMetric:
         import librosa
 
         x = self._to_mono(audio)
+        # Normalize level FIRST so invariance to loudness is exact by construction
+        # (otherwise the epsilon floors below interact with absolute level).
+        x = x / (np.sqrt(np.mean(x**2)) + _EPS) * 0.1
         S = np.abs(librosa.stft(x, n_fft=self.n_fft, hop_length=self.hop)) ** 2  # (freq, t)
 
         # Keep only frames with signal (drop silence/decay tails so they do not bias stats).
