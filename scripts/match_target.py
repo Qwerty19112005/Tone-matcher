@@ -29,7 +29,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from tonematcher.data import trim_seconds  # noqa: E402
 from tonematcher.data.guitar import _finalize, _place, karplus_strong  # noqa: E402
 from tonematcher.hosting import PluginHost  # noqa: E402
-from tonematcher.metrics import MRSTFTMetric  # noqa: E402
+from tonematcher.metrics import MRSTFTMetric, WhitenedMRSTFT  # noqa: E402
 from tonematcher.optimize import minimize  # noqa: E402
 
 SR = 48000
@@ -193,6 +193,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     metric = MRSTFTMetric()
+    wmetric = WhitenedMRSTFT(sample_rate=SR)
 
     # ---- stage 1: target segment ----
     x = load_target(args.target)
@@ -222,7 +223,17 @@ def main() -> int:
         probe = make_probe(args.seconds + WU, args.root_hz)
     km = knob_map()
 
+    # Stage A metric: EQ-invariant (whitened) so amp selection keys on distortion and
+    # dynamics character, not cab/mix spectral tilt. Stage B restores the balance.
+    from tonematcher.metrics.whitened import whiten
+
+    seg_white = whiten(seg, SR)
+
     def score(render):
+        w = whiten(rms_norm(trim_seconds(render, SR, WU)), SR)
+        return metric.distance(w, seg_white)
+
+    def score_plain(render):
         return metric.distance(rms_norm(trim_seconds(render, SR, WU)), seg)
 
     # ---- stage 2: scan all modes ----
@@ -304,33 +315,74 @@ def main() -> int:
         h.reset()
         return score(h.render(probe * (10 ** (drive_db / 20.0)), SR))
 
-    print(f"start score: {objective(x0):.3f} | optimizing (cma, budget {args.budget})",
+    print(f"start score (whitened): {objective(x0):.3f} | optimizing (cma, budget {args.budget})",
           flush=True)
     t0 = time.time()
     res = minimize(objective, dim=dim, budget=args.budget, backend="cma", seed=0)
-    print(f"final score: {res.loss:.3f} ({res.n_evals} evals, {time.time()-t0:.0f}s)",
-          flush=True)
+    print(f"stage A final (whitened): {res.loss:.3f} ({res.n_evals} evals, "
+          f"{time.time()-t0:.0f}s)", flush=True)
 
-    # ---- stage 4: report ----
-    final_vals = {}
+    # Pin stage A result: core character is now fixed.
     for k, val in zip(knobs, res.x[:-1]):
         h.set_raw(k, float(np.clip(val, 0.0, 1.0)))
     drive_db = -6.0 + 15.0 * float(np.clip(res.x[-1], 0.0, 1.0))
+    drive_gain = 10 ** (drive_db / 20.0)
+
+    # ---- stage 3b: EQ fit (spectral balance) with the plugin's own EQ section ----
+    # Scored with PLAIN level-normalized MRSTFT: now the envelope is what we match.
+    eq_knobs = [k for k in h.continuous_params()
+                if "eq" in k.lower() and k not in knobs
+                and not any(s in k.lower() for s in SKIP_HINTS)
+                and (mode_token in k.lower() or not any(
+                    (mm[0] if isinstance(mm, tuple) else str(mm or "")).lower().replace(" ", "_")
+                    in k.lower() for mm in w_spec["modes"] if mm is not w_mode))][:9]
+    eq_vals = {}
+    if eq_knobs:
+        print(f"stage B: fitting {len(eq_knobs)} EQ knobs: {eq_knobs}", flush=True)
+
+        def eq_objective(v: np.ndarray) -> float:
+            for k, val in zip(eq_knobs, v):
+                h.set_raw(k, float(np.clip(val, 0.0, 1.0)))
+            h.reset()
+            return score_plain(h.render(probe * drive_gain, SR))
+
+        base_plain = eq_objective(np.full(len(eq_knobs), 0.5))
+        t0 = time.time()
+        eq_res = minimize(eq_objective, dim=len(eq_knobs),
+                          budget=max(200, args.budget // 2), backend="cma", seed=1)
+        print(f"stage B plain score: {base_plain:.3f} -> {eq_res.loss:.3f} "
+              f"({time.time()-t0:.0f}s)", flush=True)
+        eq_vals = {k: float(np.clip(v, 0, 1)) for k, v in zip(eq_knobs, eq_res.x)}
+        for k, v in eq_vals.items():
+            h.set_raw(k, v)
+    else:
+        print("stage B: no EQ-section knobs found on this mode; skipping", flush=True)
+
+    # ---- stage 4: report ----
     h.reset()
-    matched = h.render(probe * (10 ** (drive_db / 20.0)), SR)
+    matched = h.render(probe * drive_gain, SR)
+    final_plain = score_plain(matched)
     sf.write(OUT_DIR / "match_result.wav", rms_norm(trim_seconds(matched, SR, WU)).T, SR)
 
+    print(f"\nfinal plain MRSTFT vs target: {final_plain:.3f}")
     print("\n=== DIAL THIS IN ===")
     print(f"plugin: {winner['mode']}")
     print(f"input drive relative to a 0.25-peak DI: {drive_db:+.1f} dB")
+    print("core (stage A, EQ-invariant match):")
     for k, val in zip(knobs, res.x[:-1]):
         v = float(np.clip(val, 0.0, 1.0))
         h.set_raw(k, v)
         print(f"  {k:26} raw {v:.3f}   display: {h.get_value(k)}")
+    if eq_vals:
+        print("EQ section (stage B, spectral balance):")
+        for k, v in eq_vals.items():
+            print(f"  {k:26} raw {v:.3f}   display: {h.get_value(k)}")
     report = {
         "target": str(args.target), "segment_start_s": seg_start,
-        "winner": winner["mode"], "final_score": res.loss,
+        "winner": winner["mode"],
+        "stageA_whitened_score": res.loss, "final_plain_score": final_plain,
         "knobs_raw": {k: float(np.clip(v, 0, 1)) for k, v in zip(knobs, res.x[:-1])},
+        "eq_raw": eq_vals,
         "drive_db": drive_db,
         "mode_ranking": [{"mode": r["mode"], "score": r["score"]} for r in results[:10]],
     }

@@ -75,6 +75,30 @@ def test_richer_di_regimes():
         assert 0.0 < float(np.max(np.abs(di))) <= 1.0, name
 
 
+def test_whitened_metric_eq_invariance():
+    from tonematcher.metrics import WhitenedMRSTFT
+
+    from tonematcher.data.guitar import karplus_strong
+
+    sr = 48000
+    # realistic plucked-string source (broadband, with a noise floor like real audio;
+    # a pure sum-of-sines line spectrum is pathological for envelope estimation)
+    base = karplus_strong(110.0, 1.0, sr, seed=3).astype(np.float64)
+    a = np.tanh(4.0 * base).astype(np.float32)  # a "distorted amp" tone
+    # strong linear tilt EQ (zero-phase): what a cab/mix chain does
+    f = np.fft.rfftfreq(sr, 1 / sr)
+    ramp = np.clip((np.log2(np.maximum(f, 1)) - np.log2(100)) / 6.0, 0, 1)
+    tilt = 10 ** ((-8 + 16 * ramp) / 20)
+    a_tilt = np.fft.irfft(np.fft.rfft(a) * tilt, n=len(a)).astype(np.float32)
+    b = np.tanh(12.0 * base).astype(np.float32)  # different distortion amount
+
+    wm = WhitenedMRSTFT(sample_rate=sr)
+    d_tilt_w, d_dist_w = wm.distance(a, a_tilt), wm.distance(a, b)
+    # whitened: a pure EQ tilt must read as much smaller than a distortion change
+    assert d_tilt_w < 0.5 * d_dist_w
+    assert d_dist_w > 0.1  # still clearly sees the nonlinear difference
+
+
 def test_minimize_recovers_quadratic():
     from tonematcher.optimize import minimize
 

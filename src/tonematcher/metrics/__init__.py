@@ -17,5 +17,7 @@ from __future__ import annotations
 from .fingerprint import ToneFingerprintMetric
 from .learned import OpenAmpToneMetric
 from .mrstft import MRSTFTMetric
+from .whitened import WhitenedMRSTFT, whiten
 
-__all__ = ["MRSTFTMetric", "ToneFingerprintMetric", "OpenAmpToneMetric"]
+__all__ = ["MRSTFTMetric", "ToneFingerprintMetric", "OpenAmpToneMetric",
+           "WhitenedMRSTFT", "whiten"]
