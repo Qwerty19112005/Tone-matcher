@@ -18,6 +18,7 @@ class OptResult:
     loss: float  # best objective value
     n_evals: int  # number of objective evaluations
     history: list[float] = field(default_factory=list)  # loss per evaluation
+    stop_reason: str = ""  # why the optimizer terminated (cma backend only)
 
 
 def minimize(
@@ -28,10 +29,15 @@ def minimize(
     backend: str = "nevergrad",
     seed: int = 0,
     bounds: tuple[float, float] = (0.0, 1.0),
+    x0: np.ndarray | None = None,
+    cma_options: dict | None = None,
 ) -> OptResult:
     """Minimize ``fn`` over ``[bounds]^dim`` and return the best point seen.
 
     ``fn`` takes a 1-D ``np.ndarray`` of length ``dim`` and returns a float.
+    With ``backend="cma"``, extra ``cma_options`` (e.g. ``{"tolfun": 5e-3}``) enable
+    convergence-based stopping: the run ends when improvement stagnates, with ``budget``
+    acting as a safety cap. The stop reason is reported in ``OptResult.stop_reason``.
     """
     lo, hi = bounds
     state = {"n": 0, "best_x": None, "best": float("inf")}
@@ -54,18 +60,22 @@ def minimize(
         param.random_state.seed(seed)
         optimizer = ng.optimizers.NGOpt(parametrization=param, budget=budget)
         optimizer.minimize(wrapped)
+    stop_reason = ""
+    if backend == "nevergrad":
+        pass  # already ran above
     elif backend == "cma":
         import cma
 
-        x0 = np.full(dim, (lo + hi) / 2.0)
-        es = cma.CMAEvolutionStrategy(
-            x0,
-            0.25 * (hi - lo),
-            {"bounds": [lo, hi], "maxfevals": budget, "seed": seed, "verbose": -9},
-        )
+        start = np.asarray(x0, dtype=float) if x0 is not None else np.full(dim, (lo + hi) / 2.0)
+        opts = {"bounds": [lo, hi], "maxfevals": budget, "seed": seed, "verbose": -9}
+        if cma_options:
+            opts.update(cma_options)
+        es = cma.CMAEvolutionStrategy(start, 0.25 * (hi - lo), opts)
         es.optimize(wrapped)
+        stop_reason = str(es.stop())
     else:
         raise ValueError(f"unknown backend: {backend!r} (use 'nevergrad' or 'cma')")
 
     best_x = state["best_x"] if state["best_x"] is not None else np.full(dim, (lo + hi) / 2.0)
-    return OptResult(x=best_x, loss=state["best"], n_evals=state["n"], history=history)
+    return OptResult(x=best_x, loss=state["best"], n_evals=state["n"], history=history,
+                     stop_reason=stop_reason)

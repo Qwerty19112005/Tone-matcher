@@ -70,8 +70,8 @@ src/tonematcher/
   nominate/   static stage: embedding query / blind graph estimation
   data/       DI loading, reference/test-signal generation
   cli.py
-scripts/      phase0_host_check.py, phase1_recover_one_knob.py
-configs/      YAML run configs
+scripts/      phase0_host_check.py, phase1_recover_one_knob.py, phase3_recover_preset.py,
+              profile_v0.py, train_tone_encoder_v0.py, match_target.py, full_match.py
 ```
 
 ## License

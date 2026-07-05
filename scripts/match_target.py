@@ -189,7 +189,9 @@ def main() -> int:
     ap.add_argument("--budget", type=int, default=700, help="fine-tune render budget")
     ap.add_argument("--top-modes", type=int, default=3, help="modes shown in the report")
     ap.add_argument("--mode-filter", default=None, help="only scan modes containing this")
+    ap.add_argument("--tag", default="", help="suffix for output filenames (comparison runs)")
     args = ap.parse_args()
+    sfx = f"_{args.tag}" if args.tag else ""
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     metric = MRSTFTMetric()
@@ -362,7 +364,7 @@ def main() -> int:
     h.reset()
     matched = h.render(probe * drive_gain, SR)
     final_plain = score_plain(matched)
-    sf.write(OUT_DIR / "match_result.wav", rms_norm(trim_seconds(matched, SR, WU)).T, SR)
+    sf.write(OUT_DIR / f"match_result{sfx}.wav", rms_norm(trim_seconds(matched, SR, WU)).T, SR)
 
     print(f"\nfinal plain MRSTFT vs target: {final_plain:.3f}")
     print("\n=== DIAL THIS IN ===")
@@ -386,9 +388,9 @@ def main() -> int:
         "drive_db": drive_db,
         "mode_ranking": [{"mode": r["mode"], "score": r["score"]} for r in results[:10]],
     }
-    json.dump(report, open(OUT_DIR / "match_report.json", "w"), indent=1)
-    print(f"\nA/B files: {OUT_DIR}\\match_target_segment.wav vs match_result.wav")
-    print(f"report: {OUT_DIR}\\match_report.json")
+    json.dump(report, open(OUT_DIR / f"match_report{sfx}.json", "w"), indent=1)
+    print(f"\nA/B files: {OUT_DIR}\\match_target_segment.wav vs match_result{sfx}.wav")
+    print(f"report: {OUT_DIR}\\match_report{sfx}.json")
     return 0
 
 
